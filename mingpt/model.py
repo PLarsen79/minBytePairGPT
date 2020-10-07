@@ -22,9 +22,10 @@ class GPTConfig:
     resid_pdrop = 0.1
     attn_pdrop = 0.1
 
-    def __init__(self, vocab_size, block_size, **kwargs):
+    def __init__(self, vocab_size, block_size, bDecisionTreeLayers, **kwargs):
         self.vocab_size = vocab_size
         self.block_size = block_size
+        self.bDecisionTreeLayers = bDecisionTreeLayers
         for k,v in kwargs.items():
             setattr(self, k, v)
 
@@ -179,6 +180,7 @@ class GPT(nn.Module):
 
     def forward(self, idx, targets=None):
         b, t = idx.size()
+            
         assert t <= self.block_size, "Cannot forward, model block size is exhausted."
 
         # forward the GPT model
@@ -192,6 +194,21 @@ class GPT(nn.Module):
         # if we are given some desired targets also calculate the loss
         loss = None
         if targets is not None:
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
+            if isinstance(targets, list):
+                loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets[0].view(-1))
+                loss2 = F.cross_entropy(logits.view(-1, logits.size(-1)), targets[1].view(-1))
+                if loss2.item() < loss.item():
+                    loss = loss2
+                loss2 = F.cross_entropy(logits.view(-1, logits.size(-1)), targets[2].view(-1))
+                if loss2.item() < loss.item():
+                    loss = loss2
+                loss2 = F.cross_entropy(logits.view(-1, logits.size(-1)), targets[3].view(-1))
+                if loss2.item() < loss.item():
+                    loss = loss2
+                loss2 = F.cross_entropy(logits.view(-1, logits.size(-1)), targets[4].view(-1))
+                if loss2.item() < loss.item():
+                    loss = loss2
+            else:
+                loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
 
         return logits, loss
